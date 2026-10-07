@@ -19,6 +19,8 @@ API_PREFIX = "/api/v1"
 
 def configure_logging(level: str) -> None:
     logging.basicConfig(level=level.upper(), format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    # Alembic logs every plugin it loads at INFO on each startup; keep only real migration messages.
+    logging.getLogger("alembic.runtime.plugins").setLevel(logging.WARNING)
 
 
 def create_app(

@@ -10,7 +10,7 @@ Phase 5  — AI search assistant             ✅ Complete (live Claude call not 
 Phase 6  — Mobile foundation & auth UI     ✅ Complete
 Phase 7  — Mobile features & player        ✅ Complete (debug + release APK built)
 Phase 8  — Integration                     ✅ Complete (HTTP smoke test + full app run on an Android 16 emulator)
-Phase 9  — DevOps                          🔄 Files written, compose config validates; image not built (Docker daemon off)
+Phase 9  — DevOps                          ✅ Complete (image built, full stack verified on PostgreSQL, CI jobs added)
 Phase 10 — Security review & final audit   ✅ Complete (see audit below)
 ```
 
@@ -71,7 +71,7 @@ Phase 10 — Security review & final audit   ✅ Complete (see audit below)
   just_audio_background (media notification / lock screen / Bluetooth buttons).
 - `AuthGate` stops playback and clears the library whenever a session ends, whether by logout, account
   deletion or a session that expired on its own.
-- `flutter analyze`: no issues; `flutter test`: 15/15 pass.
+- `flutter analyze`: no issues; `flutter test`: 18/18 pass.
 - **APK:** `app-debug.apk` and `app-release.apk` (49 MB) build successfully, via `mobile/build_apk.ps1`
   (see D-010). Build fixes needed along the way:
   - Gradle heap cut to 3 GB, with HTTP timeouts for stalled downloads.
@@ -79,6 +79,20 @@ Phase 10 — Security review & final audit   ✅ Complete (see audit below)
   - `audio_session` pinned below 0.2 (KGP 1.8 compatibility).
   - `compileSdk` set to 36.
   - The Unicode-path workaround for the shader compiler.
+
+## Phase 9 — DevOps
+- Docker image built and the compose stack (API + PostgreSQL 17 + Mailpit) run locally:
+  - Alembic migrated PostgreSQL on startup.
+  - The container runs as non-root `appuser` (uid 10001), and all three services report healthy.
+  - Data survived an API restart and a full `compose up` recreate.
+- `scripts/smoke_test.py --base-url … --mailpit …` (remote mode, which reads e-mails through Mailpit's API)
+  passes against the stack, so SMTP delivery is covered too.
+- The full pytest suite also passes on PostgreSQL (`TEST_DATABASE_URL`; the database is wiped per test).
+- The release APK was installed on the emulator. The server address was set in the app to the PC's LAN
+  address (`192.168.1.8:8000`) and persisted across a cold restart. Registration went through the app to
+  the Docker stack, and verification via the Mailpit link and login succeeded over the LAN address.
+- CI now has three backend jobs (SQLite, PostgreSQL service, Docker Compose E2E) plus the Flutter job.
+- `KURULUM.md`: Turkish step-by-step guide covering the server on Docker, APK install and server address.
 
 ## Phase 8 — Integration
 - `backend/scripts/smoke_test.py` starts uvicorn and runs the full journey over real HTTP. It passes.
@@ -108,7 +122,7 @@ Phase 10 — Security review & final audit   ✅ Complete (see audit below)
 
 ## Open items / known limitations
 1. ~~Verify the APK and run it on an emulator.~~ Done (Phase 7/8).
-2. Build the Docker image and run the stack on PostgreSQL (the Postgres path has not been exercised).
+2. ~~Docker image / PostgreSQL untested.~~ Done (Phase 9).
 3. ~~Access JWTs stay valid after a password change or reset.~~ Fixed: `User.session_epoch` is embedded
    in access and stream tokens (`ep` claim) and is bumped on password change/reset, which invalidates all
    outstanding tokens. A plain logout still leaves the current access token valid for up to 15 minutes.
@@ -124,7 +138,7 @@ Phase 10 — Security review & final audit   ✅ Complete (see audit below)
 
 Automated checks, all passing: `ruff check`, `ruff format --check`, `bandit -r app migrations`,
 `pip-audit` (no known vulnerabilities), backend `pytest` (50 tests), `scripts/smoke_test.py` (live HTTP),
-`flutter analyze`, `flutter test` (15 tests).
+`flutter analyze`, `flutter test` (18 tests).
 
 The manual review against ARCHITECTURE §7 found and fixed three issues:
 - concurrent refreshes could both rotate one refresh token; the token is now claimed with an atomic UPDATE;
@@ -145,12 +159,11 @@ The manual review against ARCHITECTURE §7 found and fixed three issues:
 | F8 Password reset | ✅ | 6-digit code, 5-attempt cap, revokes sessions | |
 | N1 Strong hashing, no plain text | ✅ | Argon2id; SHA-256 / HMAC for stored tokens | `test_register_stores_argon2_hash…` |
 | N2 Strict security standards | ✅ | ARCHITECTURE §7 controls, rate limits, headers, bandit/pip-audit in CI | |
-| N3 Android APK MVP | ✅ | `app-release.apk` built; emulator run | release is signed with the debug key unless `android/key.properties` exists |
+| N3 Android APK MVP | ✅ | `app-release.apk` built and published on GitHub Releases; emulator runs (debug + release) | test build allows LAN HTTP and is signed with the debug key; production needs HTTPS + a real signing key |
 | N4 Low device storage | ✅ | streaming only; no download feature | |
 | Future: watch, CarPlay/Auto, Bluetooth, Chromecast, TV | ➖ Intentionally omitted | spec marks them as future | media session via `audio_service` already handles Bluetooth media buttons |
 
 ### Remaining technical debt / future work
-- Test on PostgreSQL via docker-compose (Docker was out of scope for this round).
 - Playing from a list requests one stream URL per queued track (up to 100); a batch `stream-urls` endpoint
   or lazy URL fetching would cut the request count.
 - uvicorn's default access log records stream URLs including the stream token (the Docker image runs with

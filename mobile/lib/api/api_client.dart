@@ -18,41 +18,84 @@ class ApiException implements Exception {
   String toString() => 'ApiException($statusCode, $code, $detail)';
 }
 
-/// Persists the refresh token. Access tokens only live in memory.
+/// Persists the refresh token and the chosen server address. Access tokens only live in memory.
 abstract class TokenStore {
   Future<String?> readRefreshToken();
   Future<void> writeRefreshToken(String? token);
+  Future<String?> readServerUrl();
+  Future<void> writeServerUrl(String? url);
 }
 
 class SecureTokenStore implements TokenStore {
-  static const _key = 'refresh_token';
+  static const _refreshKey = 'refresh_token';
+  static const _serverKey = 'server_url';
   final _storage = const FlutterSecureStorage();
 
   @override
-  Future<String?> readRefreshToken() => _storage.read(key: _key);
+  Future<String?> readRefreshToken() => _storage.read(key: _refreshKey);
 
   @override
   Future<void> writeRefreshToken(String? token) =>
-      token == null ? _storage.delete(key: _key) : _storage.write(key: _key, value: token);
+      token == null ? _storage.delete(key: _refreshKey) : _storage.write(key: _refreshKey, value: token);
+
+  @override
+  Future<String?> readServerUrl() => _storage.read(key: _serverKey);
+
+  @override
+  Future<void> writeServerUrl(String? url) =>
+      url == null ? _storage.delete(key: _serverKey) : _storage.write(key: _serverKey, value: url);
 }
 
 class MemoryTokenStore implements TokenStore {
   String? token;
+  String? serverUrl;
 
   @override
   Future<String?> readRefreshToken() async => token;
 
   @override
   Future<void> writeRefreshToken(String? value) async => token = value;
+
+  @override
+  Future<String?> readServerUrl() async => serverUrl;
+
+  @override
+  Future<void> writeServerUrl(String? value) async => serverUrl = value;
 }
 
 /// Thin typed wrapper over the REST API with transparent access-token refresh.
 class ApiClient {
   ApiClient({required String baseUrl, required this.tokenStore, http.Client? httpClient})
-      : _base = Uri.parse(baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl),
+      : _base = parseServerUrl(baseUrl)!,
         _http = httpClient ?? http.Client();
 
-  final Uri _base;
+  Uri _base;
+
+  /// The server this client talks to, without a trailing slash.
+  String get baseUrl => _base.toString();
+
+  /// Points the client at another server. Sessions belong to a server, so the stored login is dropped.
+  Future<void> setBaseUrl(String url) async {
+    final parsed = parseServerUrl(url);
+    if (parsed == null) throw ArgumentError.value(url, 'url', 'not an http(s) URL');
+    _base = parsed;
+    _accessToken = null;
+    await tokenStore.writeRefreshToken(null);
+  }
+
+  /// Validates and normalises a server address ("192.168.1.8:8000" -> "http://192.168.1.8:8000").
+  static Uri? parseServerUrl(String input) {
+    var text = input.trim();
+    if (text.isEmpty) return null;
+    if (!text.contains('://')) text = 'http://$text';
+    while (text.endsWith('/')) {
+      text = text.substring(0, text.length - 1);
+    }
+    final uri = Uri.tryParse(text);
+    if (uri == null || !(uri.scheme == 'http' || uri.scheme == 'https') || uri.host.isEmpty) return null;
+    if (uri.hasQuery || uri.hasFragment) return null;
+    return uri;
+  }
   final http.Client _http;
   final TokenStore tokenStore;
   String? _accessToken;

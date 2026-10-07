@@ -21,6 +21,51 @@ jobs:
       - run: uv run bandit -q -r app
       - run: uv run pip-audit
 
+  backend-postgres:
+    # Same test suite against PostgreSQL (the production database) instead of SQLite.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: efetufe_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://postgres:test@localhost:5432/efetufe_test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --frozen
+      - run: uv run pytest
+
+  docker:
+    # Builds the image and runs the full stack (API + PostgreSQL + Mailpit) end to end.
+    runs-on: ubuntu-latest
+    env:
+      APP_SECRET_KEY: ci-compose-secret-key-0123456789abcdefghijkl
+      APP_PUBLIC_BASE_URL: http://localhost:8000
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - run: docker compose up -d --build --wait
+      - run: docker compose exec -T api python -m app.cli seed-demo --seconds 3
+      - working-directory: backend
+        run: |
+          uv sync --frozen
+          uv run python scripts/smoke_test.py --base-url http://localhost:8000 --mailpit http://localhost:8025
+      - if: failure()
+        run: docker compose logs
+      - if: always()
+        run: docker compose down -v
+
   mobile:
     runs-on: ubuntu-latest
     defaults:

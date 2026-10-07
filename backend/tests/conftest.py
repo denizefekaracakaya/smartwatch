@@ -1,8 +1,10 @@
+import os
 import re
 from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, text
 
 from app.config import Settings
 from app.main import create_app
@@ -10,12 +12,29 @@ from app.services.email import ConsoleEmailSender
 
 PASSWORD = "CorrectHorse42"
 
+# Set TEST_DATABASE_URL (e.g. postgresql+psycopg://...) to run the suite against a real server database;
+# it is wiped before every test. Default: a fresh SQLite file per test.
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
+
+
+def _reset_database(url: str) -> None:
+    from app import models  # noqa: F401  (register mappers)
+    from app.db import Base
+
+    engine = create_engine(url)
+    with engine.begin() as conn:
+        Base.metadata.drop_all(conn)
+        conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
+    engine.dispose()
+
 
 @pytest.fixture
 def settings(tmp_path) -> Settings:
+    if TEST_DATABASE_URL:
+        _reset_database(TEST_DATABASE_URL)
     return Settings(
         environment="test",
-        database_url=f"sqlite:///{tmp_path / 'test.db'}",
+        database_url=TEST_DATABASE_URL or f"sqlite:///{tmp_path / 'test.db'}",
         media_dir=tmp_path / "media",
         secret_key="test-secret-key-that-is-long-enough-0123456789",
         public_base_url="http://testserver",

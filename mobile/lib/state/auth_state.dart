@@ -32,6 +32,15 @@ class AuthState extends ChangeNotifier {
     notifyListeners();
   }
 
+  String get serverUrl => api.baseUrl;
+
+  /// Switches to another backend; only offered while signed out.
+  Future<void> changeServer(String url) async {
+    await api.setBaseUrl(url);
+    await api.tokenStore.writeServerUrl(api.baseUrl);
+    notifyListeners();
+  }
+
   Future<void> register(String email, String password, String displayName) =>
       api.register(email.trim(), password, displayName.trim());
 

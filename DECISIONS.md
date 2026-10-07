@@ -109,3 +109,13 @@
 - No `ndkVersion` pin: the app has no native code, so building does not require a ~1 GB NDK download.
 - Gradle heap is 3 GB (8 GB crashed the JVM on a 16 GB machine), with HTTP timeouts for stalled downloads.
 - `compileSdk` is at least 36, because `flutter_secure_storage` 10 compiles against SDK 36.
+
+## D-017 Server address chosen in the app; LAN test builds allow cleartext
+- **Context:** A phone has to reach a backend that, for now, runs on the user's PC in the local network.
+  Baking the address in at build time (`--dart-define`) would need one APK per network.
+- **Selected:** The login screen has a "Sunucu" (server) setting; the address is validated (http/https,
+  no query) and stored in secure storage, and changing it drops the stored session. `API_BASE_URL` stays as
+  the default. The APK published on GitHub Releases is built with `ALLOW_CLEARTEXT=true` so it can talk to
+  `http://<pc-ip>:8000`.
+- **Trade-offs:** A cleartext-capable release build is acceptable only for LAN testing. A public deployment
+  must run behind HTTPS and ship an APK built without `ALLOW_CLEARTEXT`.

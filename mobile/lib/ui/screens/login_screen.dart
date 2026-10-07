@@ -53,6 +53,55 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _editServer() async {
+    final auth = context.read<AuthState>();
+    final controller = TextEditingController(text: auth.serverUrl);
+    String? error;
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('Sunucu adresi'),
+          content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Uygulamanın bağlanacağı Efetüfe sunucusu. Örnek: http://192.168.1.8:8000'),
+            const SizedBox(height: 12),
+            TextField(
+              key: const Key('server-field'),
+              controller: controller,
+              autofocus: true,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(labelText: 'Adres', errorText: error),
+              onSubmitted: (value) {
+                if (ApiClient.parseServerUrl(value) == null) {
+                  setDialogState(() => error = 'Geçerli bir http(s) adresi girin.');
+                } else {
+                  Navigator.of(dialogContext).pop(value);
+                }
+              },
+            ),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('İptal')),
+            FilledButton(
+              key: const Key('server-save'),
+              onPressed: () {
+                if (ApiClient.parseServerUrl(controller.text) == null) {
+                  setDialogState(() => error = 'Geçerli bir http(s) adresi girin.');
+                } else {
+                  Navigator.of(dialogContext).pop(controller.text);
+                }
+              },
+              child: const Text('Kaydet'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    await auth.changeServer(result);
+    if (mounted) setState(() => _error = null);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -109,6 +158,13 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: () =>
                 Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const RegisterScreen())),
             child: const Text('Hesap oluştur'),
+          ),
+          const SizedBox(height: 24),
+          TextButton.icon(
+            key: const Key('server-button'),
+            onPressed: _editServer,
+            icon: const Icon(Icons.dns_outlined, size: 18),
+            label: Text('Sunucu: ${context.watch<AuthState>().serverUrl}', overflow: TextOverflow.ellipsis),
           ),
         ]),
       ),

@@ -18,7 +18,11 @@ Future<void> main() async {
     androidNotificationChannelName: 'Müzik çalma',
     androidNotificationOngoing: true,
   );
-  final api = ApiClient(baseUrl: AppConfig.apiBaseUrl, tokenStore: SecureTokenStore());
+  final store = SecureTokenStore();
+  // A server chosen in the app (login screen -> "Sunucu") wins over the build-time default.
+  final saved = await store.readServerUrl();
+  final baseUrl = (saved != null && ApiClient.parseServerUrl(saved) != null) ? saved : AppConfig.apiBaseUrl;
+  final api = ApiClient(baseUrl: baseUrl, tokenStore: store);
   runApp(EfetufeApp(api: api));
 }
 
