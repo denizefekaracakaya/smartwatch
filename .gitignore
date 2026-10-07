@@ -38,3 +38,6 @@ hs_err_pid*.log
 # Local tool state
 .serena/
 backend/migrations/**/__pycache__/
+
+# Playlist import report
+eksik-sarkilar.csv

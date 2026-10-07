@@ -112,6 +112,21 @@ Phase 10 — Security review & final audit   ✅ Complete (see audit below)
   advertises in `APP_PUBLIC_BASE_URL`. A changed DHCP address, `adb reverse` or a proxy can no longer break
   playback while login works.
 
+### Real music and Spotify playlists
+- Real audio comes from the operator's own files: `scripts/add_music.ps1` → `app.cli ingest`. Tags are
+  used when present, otherwise the artist and title are guessed from the file name ("03 - Artist - Title
+  (Official Audio)").
+- `app.cli import-playlists` imports Spotify playlists as metadata, from the account-data export JSON, an
+  Exportify CSV, or a playlist URL via the Web API. Tracks are matched to the catalog and the rest are
+  reported to a CSV (`scripts/import_playlists.ps1` writes `eksik-sarkilar.csv`). No audio is downloaded
+  from Spotify or YouTube (DECISIONS D-019).
+- Tests: `tests/test_playlist_import.py` (7). Verified against the Docker/PostgreSQL stack with a sample
+  folder and a sample `Playlist1.json`: 2/3 tracks matched, the playlist was created, and the missing track
+  was written to the CSV. Re-running added nothing twice. The test data was removed from the server
+  afterwards.
+- The Spotify Web API path is tested against a mocked HTTP transport only; no Spotify credentials were
+  available.
+
 ## Phase 8 — Integration
 - `backend/scripts/smoke_test.py` starts uvicorn and runs the full journey over real HTTP. It passes.
 - Manual end-to-end run of the debug APK on an Android 16 (API 36) emulator against a local backend

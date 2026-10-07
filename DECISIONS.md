@@ -137,3 +137,19 @@
   APK.
 - **Trade-offs:** Losing the keystore means no further updates for installed copies, so it must be backed
   up. Moving from the debug-signed 0.1.x builds to 0.1.2 requires one uninstall.
+
+## D-019 Real music: own files plus playlist metadata, no downloading from Spotify/YouTube
+- **Context:** The catalog needs real songs, and the user wants their Spotify playlists.
+- **Rejected:** Downloading audio from Spotify or YouTube. Spotify streams are DRM-protected and both
+  services' terms forbid it, and redistributing copyrighted recordings from this server would infringe
+  the rights holders' copyright.
+- **Selected:**
+  - Audio comes from files the operator owns or is licensed to use (`scripts/add_music.ps1` →
+    `app.cli ingest`; tags, or "Artist - Title" file names).
+  - Spotify playlists are imported as *metadata only* (`app.cli import-playlists`), from three sources:
+    the Spotify account-data export (`Playlist1.json`, `YourLibrary.json`), an Exportify CSV, or a playlist
+    URL through the Web API (client-credentials flow).
+  - Each track is matched to the catalog with fuzzy title/artist matching. A title score ≥ 85 and an artist
+    score ≥ 70 are required, and remaster/live suffixes are ignored. Missing tracks go to a CSV file.
+- **Trade-offs:** A playlist is only as complete as the local library. The server should stay private
+  (family/LAN use); a public service would need licensed content.

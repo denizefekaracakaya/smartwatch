@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import random
+import re
 import struct
 import tempfile
 import wave
@@ -41,14 +42,29 @@ def _first(tags, key: str) -> str | None:
     return str(value).strip() or None
 
 
+_TRACK_NUMBER = re.compile(r"^\s*\d{1,3}\s*[-._)]\s*")
+_NOISE = re.compile(r"\s*[\[(](official|lyrics?|audio|video|hq|hd|clip|music video)[^\])]*[\])]\s*", re.I)
+
+
+def guess_from_filename(stem: str) -> tuple[str | None, str]:
+    """Best-effort (artist, title) from names like "03 - Artist - Title (Official Audio)"."""
+    name = _NOISE.sub(" ", stem.replace("_", " ")).strip()
+    name = _TRACK_NUMBER.sub("", name).strip()
+    parts = [part.strip() for part in re.split(r"\s+[-–—]\s+", name) if part.strip()]
+    if len(parts) >= 2:
+        return parts[0], " - ".join(parts[1:])
+    return None, name or stem
+
+
 def read_metadata(path: Path, default_kind: TrackKind) -> TrackMetadata:
     """Read tags with mutagen; a ``<file>.json`` sidecar overrides any field (useful for podcasts)."""
     audio = mutagen.File(path, easy=True)
     tags = audio.tags if audio is not None else None
     year_raw = _first(tags, "date")
+    guessed_artist, guessed_title = guess_from_filename(path.stem)
     meta = TrackMetadata(
-        title=_first(tags, "title") or path.stem.replace("_", " "),
-        artist=_first(tags, "artist") or "Bilinmeyen Sanatçı",
+        title=_first(tags, "title") or guessed_title,
+        artist=_first(tags, "artist") or guessed_artist or "Bilinmeyen Sanatçı",
         kind=default_kind,
         album=_first(tags, "album"),
         genre=_first(tags, "genre"),

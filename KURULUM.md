@@ -60,5 +60,61 @@ Alternatif (USB ile): telefonda **Ayarlar → Telefon hakkında → Yapı numara
   sunucu HTTPS arkasında çalışmalı ve APK `ALLOW_CLEARTEXT` olmadan derlenmelidir (README → APK).
 - AI asistanın Claude ile çalışması için sunucuyu başlatmadan önce `$env:ANTHROPIC_API_KEY` ayarla;
   aksi halde asistan bulanık aramaya geri döner.
-- Kendi müziklerini eklemek için: `docker compose cp <klasör> api:/tmp/muzik` ve
-  `docker compose exec api python -m app.cli ingest /tmp/muzik`.
+- Sunucuyu yalnızca kendin ve ailen için (evdeki ağda) kullan. Telifli müzikleri herkese açık
+  yayınlamak hukuken sorun olur.
+
+## 4. Gerçek müzik ekleme
+
+Spotify ve YouTube'dan **ses indirilemez**: Spotify'ın sesi DRM ile korunuyor, iki hizmetin de kuralları
+indirmeyi yasaklıyor ve telif hakkı ihlali olur. Bunun yerine sahip olduğun dosyaları sunucuya eklersin.
+
+1. Şarkılarını bir klasöre koy (mp3, m4a, flac, ogg, opus, wav; alt klasörler de olur). Dosyalarda
+   etiket (şarkı adı/sanatçı) yoksa adlarını `Sanatçı - Şarkı.mp3` biçiminde ver.
+2. Proje klasöründe (PowerShell):
+
+   ```powershell
+   .\scripts\add_music.ps1 "D:\Muzik"
+   .\scripts\add_music.ps1 "D:\Podcastlar" -Kind podcast
+   ```
+
+   Aynı klasörü tekrar eklemek güvenli; aynı dosyalar ikinci kez eklenmez.
+
+Yasal ve ücretsiz müzik kaynakları: kendi satın aldığın dijital albümler (Bandcamp, iTunes vb.), CD'den
+aktardıkların, Creative Commons lisanslı müzikler (Jamendo, Free Music Archive, Internet Archive).
+
+## 5. Spotify çalma listelerini aktarma
+
+Listelerin **şarkı adları ve sanatçıları** aktarılır. Sunucuda bulunan şarkılarla aynı adlı çalma listeleri
+hesabında oluşturulur. Sunucuda olmayan şarkılar `eksik-sarkilar.csv` dosyasına yazılır; onları 4. adımla
+ekleyip aktarımı tekrar çalıştırabilirsin (aynı şarkılar tekrar eklenmez).
+
+**Yol A — Spotify veri indirme (tüm listeler, gizliler dahil, kurulum gerektirmez):**
+spotify.com → Hesap → **Gizlilik ayarları** → "Verilerini indir" → **Hesap verileri**'ni seç ve iste.
+Birkaç gün içinde e-postayla gelen zip'in içindeki `Playlist1.json` dosyasını kullan:
+
+```powershell
+.\scripts\import_playlists.ps1 -Source "C:\Users\deniz\Downloads\Spotify Account Data\Playlist1.json" -User senin@epostan.com
+```
+
+Aynı klasördeki `YourLibrary.json` dosyası "Beğenilen Şarkılar" listesini getirir.
+
+**Yol B — Exportify (hemen, tek tek listeler):** <https://exportify.net> adresinde Spotify ile giriş yap →
+istediğin listede **Export** → inen `.csv` dosyasını ver:
+
+```powershell
+.\scripts\import_playlists.ps1 -Source "C:\Users\deniz\Downloads\yolculuk.csv" -User senin@epostan.com
+```
+
+**Yol C — Liste bağlantısıyla (herkese açık listeler):** <https://developer.spotify.com/dashboard>
+adresinde ücretsiz bir uygulama oluştur. Redirect URI olarak `http://127.0.0.1:8888/callback` yazabilirsin;
+kullanılmıyor ama form istiyor. Uygulamanın **Client ID** ve **Client Secret** değerlerini al:
+
+```powershell
+$env:SPOTIFY_CLIENT_ID = "..."; $env:SPOTIFY_CLIENT_SECRET = "..."
+.\scripts\import_playlists.ps1 -Source "https://open.spotify.com/playlist/..." -User senin@epostan.com
+```
+
+Spotify'ın kendi hazırladığı listeleri (ör. "Today's Top Hits") bu yolla okumak, yeni uygulamalara kapalı.
+Onlar için Yol B'yi kullan.
+
+Önce ne eşleşeceğini görmek için komutun sonuna `-DryRun` ekle.

@@ -36,6 +36,11 @@ uv run uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000
   Tags are read with mutagen; an optional `<file>.json` sidecar can set `title`, `artist`, `album`,
   `genre`, `year`, `description`, `kind`. The `description` (lyrics excerpt, episode summary…) is what the
   AI assistant searches.
+- Spotify playlists (metadata only; audio is never downloaded):
+  `uv run python -m app.cli import-playlists <Playlist1.json | exportify.csv | playlist-url> --user <email>
+  [--dry-run] [--missing-out missing.csv]`. Each track is matched to the local catalog and the rest are
+  reported (DECISIONS D-019). With Docker on Windows: `scripts/add_music.ps1` and
+  `scripts/import_playlists.ps1`, step by step in [`KURULUM.md`](KURULUM.md).
 - AI assistant: set `ANTHROPIC_API_KEY` to enable Claude (`claude-opus-5-5`). Without it, the assistant
   endpoint falls back to fuzzy search and says so in its response (`ai_used: false`).
 

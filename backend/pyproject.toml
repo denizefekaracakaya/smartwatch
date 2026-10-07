@@ -16,6 +16,7 @@ dependencies = [
     "anthropic>=0.70",
     "psycopg[binary]>=3.2",
     "alembic>=1.13",
+    "httpx>=0.27",
 ]
 
 [dependency-groups]
