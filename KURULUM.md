@@ -32,7 +32,7 @@ telefondaki uygulamayı o sunucuya bağlaman gerekir. Telefon ile bilgisayar **a
 
 1. Telefonun tarayıcısında GitHub'daki **Releases** sayfasını aç:
    <https://github.com/denizefekaracakaya/smartwatch/releases/latest>
-2. `efetufe-<sürüm>.apk` dosyasını indir.
+2. En yeni `efetufe-<sürüm>.apk` dosyasını indir (0.1.0'da çalma hatası vardı; 0.1.1 veya üstünü kullan).
 3. İndirilen dosyaya dokun. Android "bilinmeyen kaynaklardan uygulama yükleme" iznini sorar:
    **Ayarlar → Bu kaynaktan izin ver** (Chrome veya Dosyalar uygulaması için) → geri dön → **Yükle**.
 4. Play Protect uyarısı çıkarsa **Yine de yükle** de (uygulama Play Store'da yayınlanmadığı için normal).

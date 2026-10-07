@@ -55,6 +55,8 @@ android {
             manifestPlaceholders["usesCleartextTraffic"] =
                 (System.getenv("ALLOW_CLEARTEXT") == "true").toString()
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            // Keeps the audio player stack out of R8 optimisation (see proguard-rules.pro).
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }

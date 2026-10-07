@@ -94,6 +94,15 @@ Phase 10 — Security review & final audit   ✅ Complete (see audit below)
 - CI now has three backend jobs (SQLite, PostgreSQL service, Docker Compose E2E) plus the Flutter job.
 - `KURULUM.md`: Turkish step-by-step guide covering the server on Docker, APK install and server address.
 
+### Post-release fix (0.1.1)
+- On a real phone, the 0.1.0 release APK logged in fine but showed "Parça yüklenemedi" for every track.
+  The emulator reproduced it with the release APK: R8 optimisation broke just_audio's renderer (an NPE
+  inside ExoPlayer). Fixed with keep rules (DECISIONS D-016). Release 0.1.1 was verified on the emulator:
+  song and podcast playback, and an upgrade install from 0.1.0.
+- Player errors are now also written to the log (`adb logcat -s flutter`) with ExoPlayer's code/message.
+- Lesson: release-mode playback must be tested on a device before publishing; the debug-build E2E run
+  could not catch minification issues.
+
 ## Phase 8 — Integration
 - `backend/scripts/smoke_test.py` starts uvicorn and runs the full journey over real HTTP. It passes.
 - Manual end-to-end run of the debug APK on an Android 16 (API 36) emulator against a local backend

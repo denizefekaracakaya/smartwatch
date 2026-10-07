@@ -72,9 +72,12 @@ class PlaybackController extends ChangeNotifier {
       unawaited(player.play());
     } on ApiException catch (e) {
       error = errorMessage(e);
-    } on PlayerException {
+    } on PlayerException catch (e) {
+      // Visible with `adb logcat -s flutter` — the UI message alone is not enough to diagnose device issues.
+      debugPrint('PlaybackController: player error ${e.code}: ${e.message}');
       error = 'Parça yüklenemedi.';
-    } catch (_) {
+    } catch (e) {
+      debugPrint('PlaybackController: unexpected error: $e');
       error = 'Parça çalınamadı.';
     } finally {
       loading = false;

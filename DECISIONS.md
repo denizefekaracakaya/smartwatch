@@ -109,6 +109,11 @@
 - No `ndkVersion` pin: the app has no native code, so building does not require a ~1 GB NDK download.
 - Gradle heap is 3 GB (8 GB crashed the JVM on a 16 GB machine), with HTTP timeouts for stalled downloads.
 - `compileSdk` is at least 36, because `flutter_secure_storage` 10 compiles against SDK 36.
+- Release builds use `android/app/proguard-rules.pro` to keep just_audio, audio_service and media3 out of R8
+  optimisation. Without it, the minified release APK crashed on the first track ("Parça yüklenemedi";
+  logcat: `ExoPlayerImplInternal: Unexpected runtime error … NullPointerException` in just_audio's
+  `ObserverRenderer`, found via the R8 mapping file). Debug builds were unaffected because they are not
+  minified, which is why the earlier emulator test, run on a debug build, did not catch it.
 
 ## D-017 Server address chosen in the app; LAN test builds allow cleartext
 - **Context:** A phone has to reach a backend that, for now, runs on the user's PC in the local network.
