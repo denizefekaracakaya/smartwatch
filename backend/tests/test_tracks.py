@@ -117,7 +117,7 @@ def test_stream_token_validation(client, users, catalog, settings):
 
 def test_storage_refuses_path_traversal(tmp_path):
     storage = LocalMediaStorage(tmp_path / "media")
-    for bad in ["../secret.txt", r"..\secret.txt", "/etc/passwd", "a/../../x", ""]:
+    for bad in ["../secret.txt", r"..\secret.txt", "/etc/passwd", "a/../../x", "", "ab/x\x00.mp3"]:
         try:
             storage.resolve(bad)
         except UnsafePathError:

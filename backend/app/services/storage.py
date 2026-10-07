@@ -25,6 +25,10 @@ class LocalMediaStorage:
 
     def resolve(self, relative_path: str) -> Path:
         """Map a stored relative path to an absolute file path, refusing anything outside the root."""
+        # Stored paths always use "/" separators; a backslash or NUL means a crafted value. Rejecting them
+        # keeps the behaviour identical on Windows (where "\\" is a separator) and POSIX.
+        if "\\" in relative_path or "\x00" in relative_path:
+            raise UnsafePathError(relative_path)
         candidate = (self.root / relative_path).resolve()
         if not candidate.is_relative_to(self.root) or candidate == self.root:
             raise UnsafePathError(relative_path)
