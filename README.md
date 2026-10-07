@@ -83,9 +83,11 @@ $env:ALLOW_CLEARTEXT="true"; .\build_apk.ps1 -- --dart-define=API_BASE_URL=http:
 .\build_apk.ps1 -Mode debug        # debug APK (plain HTTP always allowed)
 ```
 On macOS/Linux, or from an ASCII path, plain `flutter build apk --release` works.
-Output: `mobile/build/app/outputs/flutter-apk/app-release.apk`. Release builds are signed with
-`android/key.properties` when present (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`),
-otherwise with the debug key (fine for testing, not for distribution).
+Output: `mobile/build/app/outputs/flutter-apk/app-release.apk`. Release builds are signed with the key
+referenced by `android/key.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`; git-ignored),
+otherwise with the debug key. The project's release key and the matching GitHub Actions secrets are
+described in DECISIONS D-018. Pushing a `v*` tag builds a release-signed APK in CI (`release.yml`) and
+attaches it to a GitHub release.
 
 ## Tests & checks
 ```bash

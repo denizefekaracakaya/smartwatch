@@ -124,3 +124,16 @@
   `http://<pc-ip>:8000`.
 - **Trade-offs:** A cleartext-capable release build is acceptable only for LAN testing. A public deployment
   must run behind HTTPS and ship an APK built without `ALLOW_CLEARTEXT`.
+
+## D-018 One release signing key for local and CI builds
+- **Context:** Android installs an update only if it is signed with the same key as the installed app.
+  0.1.0/0.1.1 were signed with the developer machine's debug key, while CI artifacts used the CI runner's
+  own debug key. Mixing them fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`.
+- **Selected:** One RSA-4096 release keystore (PKCS12, alias `efetufe`), kept outside the repository at
+  `%USERPROFILE%\.efetufe\efetufe-release.jks` and referenced by the git-ignored
+  `mobile/android/key.properties`. The same keystore and passwords are stored as GitHub Actions secrets
+  (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`).
+  CI signs with them when available, and the tag-triggered `release.yml` refuses to publish a debug-signed
+  APK.
+- **Trade-offs:** Losing the keystore means no further updates for installed copies, so it must be backed
+  up. Moving from the debug-signed 0.1.x builds to 0.1.2 requires one uninstall.

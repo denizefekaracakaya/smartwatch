@@ -37,8 +37,15 @@ telefondaki uygulamayı o sunucuya bağlaman gerekir. Telefon ile bilgisayar **a
    **Ayarlar → Bu kaynaktan izin ver** (Chrome veya Dosyalar uygulaması için) → geri dön → **Yükle**.
 4. Play Protect uyarısı çıkarsa **Yine de yükle** de (uygulama Play Store'da yayınlanmadığı için normal).
 
-Alternatif (USB ile): telefonda Geliştirici seçenekleri → USB hata ayıklama açıkken,
-bilgisayarda `adb install efetufe-<sürüm>.apk`.
+Alternatif (USB ile): telefonda **Ayarlar → Telefon hakkında → Yapı numarası**'na 7 kez dokun →
+**Geliştirici seçenekleri → USB hata ayıklama**'yı aç → telefonu kabloyla bağla → telefonda çıkan
+"USB hata ayıklamaya izin ver" sorusuna **İzin ver** de → bilgisayarda:
+`adb install -r efetufe-<sürüm>.apk`.
+
+> **0.1.0 / 0.1.1'den 0.1.2'ye geçiş:** 0.1.2'den itibaren uygulama kalıcı bir imza anahtarıyla
+> imzalanıyor. Eski sürümler farklı bir anahtarla imzalandığı için **bir kereye mahsus** eski uygulamayı
+> kaldırıp yenisini kurman gerekir (hesabın sunucuda durur; sadece tekrar giriş yapar ve sunucu adresini
+> yeniden girersin). Sonraki tüm güncellemeler doğrudan üzerine kurulur.
 
 ## 3. Uygulamayı sunucuya bağla
 
