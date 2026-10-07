@@ -50,6 +50,8 @@ def _import_playlists(db, args) -> int:
             print(f"Not a file: {path}", file=sys.stderr)
             return 2
         playlists = load_file(path)
+        if args.name and len(playlists) == 1:
+            playlists[0].name = args.name
 
     reports = import_playlists(db, user, playlists, dry_run=args.dry_run)
     total = matched = 0
@@ -85,6 +87,7 @@ def main(argv: list[str] | None = None) -> int:
     imp.add_argument("--user", required=True, help="e-mail of the Efetüfe account that gets the playlists")
     imp.add_argument("--dry-run", action="store_true", help="only report matches, change nothing")
     imp.add_argument("--missing-out", help="write tracks not found in the catalog to this CSV file")
+    imp.add_argument("--name", help="playlist name for a single-playlist source (default: CSV file name)")
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")

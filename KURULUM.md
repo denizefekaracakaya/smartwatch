@@ -84,6 +84,11 @@ aktardıkların, Creative Commons lisanslı müzikler (Jamendo, Free Music Archi
 
 ## 5. Spotify çalma listelerini aktarma
 
+> Komutları **PowerShell**'de çalıştır (Başlat → "PowerShell"). Git Bash'te `.ps1` dosyaları doğrudan
+> çalışmaz; orada şöyle çağırabilirsin:
+> `powershell -ExecutionPolicy Bypass -File scripts/import_playlists.ps1 -Source "C:\Users\deniz\Projects\liste" -User senin@epostan.com`
+> `-Source` bir klasör olursa içindeki tüm `.csv`/`.json` dosyaları birden aktarılır.
+
 Listelerin **şarkı adları ve sanatçıları** aktarılır. Sunucuda bulunan şarkılarla aynı adlı çalma listeleri
 hesabında oluşturulur. Sunucuda olmayan şarkılar `eksik-sarkilar.csv` dosyasına yazılır; onları 4. adımla
 ekleyip aktarımı tekrar çalıştırabilirsin (aynı şarkılar tekrar eklenmez).

@@ -10,16 +10,17 @@ param(
     [Parameter(Mandatory = $true)] [string] $Folder,
     [ValidateSet("song", "podcast")] [string] $Kind = "song"
 )
-$ErrorActionPreference = "Stop"
+# docker writes progress to stderr; under "Stop" Windows PowerShell 5.1 would abort on it.
+$ErrorActionPreference = "Continue"
 Set-Location (Join-Path $PSScriptRoot "..")
 
-$source = (Resolve-Path $Folder).Path
+$source = (Resolve-Path -LiteralPath $Folder -ErrorAction Stop).Path
 $count = (Get-ChildItem $source -Recurse -File -Include *.mp3, *.m4a, *.aac, *.ogg, *.opus, *.flac, *.wav).Count
 if ($count -eq 0) { throw "No audio files found in $source" }
 Write-Host "$count audio files found, copying to the server..."
 
 $target = "/tmp/import-" + [guid]::NewGuid().ToString("N").Substring(0, 8)
-docker compose cp "$source" "api:$target"
+docker compose cp "$source" "api:$target" 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "docker compose cp failed (is the stack running? docker compose up -d)" }
 try {
     docker compose exec -T api python -m app.cli ingest $target --kind $Kind
