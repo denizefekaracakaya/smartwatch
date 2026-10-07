@@ -34,12 +34,26 @@ class TrackMetadata:
     extra: dict = field(default_factory=dict)
 
 
+_DOMAIN = re.compile(r"(www\.|https?://|\b[\w-]+\.(com|net|org|mobi|eu|info|biz|tk|xyz)\b)", re.I)
+_TAG_SPAM_SUFFIX = re.compile(r"\s*(\|.*|\[[^\]]*\.[a-z]{2,4}\]|\([^)]*\.[a-z]{2,4}\))\s*$", re.I)
+
+
+def clean_tag(value: str | None) -> str | None:
+    """Drop download-site spam from tags: "Title | site.mobi", "Title [Site.eu]", or a URL as the artist."""
+    if not value:
+        return None
+    value = _TAG_SPAM_SUFFIX.sub("", value).strip()
+    if not value or _DOMAIN.search(value):
+        return None
+    return value
+
+
 def _first(tags, key: str) -> str | None:
     if not tags or key not in tags:
         return None
     value = tags[key]
     value = value[0] if isinstance(value, list) and value else value
-    return str(value).strip() or None
+    return clean_tag(str(value).strip())
 
 
 _TRACK_NUMBER = re.compile(r"^\s*\d{1,3}\s*[-._)]\s*")

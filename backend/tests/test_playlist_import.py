@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import select
 
 from app.models import Playlist, TrackKind, User
-from app.services.catalog import TrackMetadata, add_track, guess_from_filename, synth_wav
+from app.services.catalog import TrackMetadata, add_track, clean_tag, guess_from_filename, synth_wav
 from app.services.playlist_import import (
     ImportedPlaylist,
     WantedTrack,
@@ -37,6 +37,14 @@ def test_filename_guessing():
     assert guess_from_filename("03 - Tarkan - Şımarık (Official Video)") == ("Tarkan", "Şımarık")
     assert guess_from_filename("Sezen Aksu - Firuze") == ("Sezen Aksu", "Firuze")
     assert guess_from_filename("My_Song") == (None, "My Song")
+
+
+def test_tag_spam_is_removed():
+    assert clean_tag("www.mp3indirdur.mobi") is None
+    assert clean_tag("Aklımı Kaçırdım | mp3indirdur.mobi") == "Aklımı Kaçırdım"
+    assert clean_tag("Bal Dudaklım [Vivaturkiye.eu]") == "Bal Dudaklım"
+    assert clean_tag("Mr. Brightside") == "Mr. Brightside"
+    assert clean_tag("Bu Delikanlıyı Unutamazsın (feat. Rober Hatemo)").endswith("(feat. Rober Hatemo)")
 
 
 def test_parse_spotify_account_export():

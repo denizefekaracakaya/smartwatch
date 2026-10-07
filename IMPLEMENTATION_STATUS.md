@@ -126,6 +126,12 @@ Phase 10 — Security review & final audit   ✅ Complete (see audit below)
   afterwards.
 - The Spotify Web API path is tested against a mocked HTTP transport only; no Spotify credentials were
   available.
+- Ingest now drops download-site spam from tags ("www.site.mobi" as the artist, "Title | site.mobi",
+  "Title [Site.eu]") instead of storing it, and falls back to the file name. Metadata that cannot be
+  recovered from the file can be given in a `<file>.json` sidecar.
+- First real library: 28 songs (32 MP3s, 4 byte-identical duplicates skipped) from the operator's folder,
+  with corrected Turkish artist/title names supplied as sidecars. MP3 streaming (`audio/mpeg`, HTTP 206)
+  and search were verified on the Docker stack.
 
 ## Phase 8 — Integration
 - `backend/scripts/smoke_test.py` starts uvicorn and runs the full journey over real HTTP. It passes.
