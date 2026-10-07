@@ -103,6 +103,15 @@ Phase 10 — Security review & final audit   ✅ Complete (see audit below)
 - Lesson: release-mode playback must be tested on a device before publishing; the debug-build E2E run
   could not catch minification issues.
 
+### Real-device verification (0.1.2 → 0.1.3)
+- Tested on a Samsung Galaxy A56 (SM-A566B, Android 16) over ADB:
+  - Release-signed 0.1.2 installed and played tracks.
+  - 0.1.3 installed as an in-place upgrade; the session was kept and playback works both through
+    `adb reverse` (server `127.0.0.1:8000`) and over Wi-Fi (`192.168.1.8:8000`).
+- 0.1.3: the app fetches audio from the server address it is configured with, not the host the server
+  advertises in `APP_PUBLIC_BASE_URL`. A changed DHCP address, `adb reverse` or a proxy can no longer break
+  playback while login works.
+
 ## Phase 8 — Integration
 - `backend/scripts/smoke_test.py` starts uvicorn and runs the full journey over real HTTP. It passes.
 - Manual end-to-end run of the debug APK on an Android 16 (API 36) emulator against a local backend

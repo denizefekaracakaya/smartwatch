@@ -178,8 +178,22 @@ class ApiClient {
     return TrackPage.fromJson(json as Map<String, dynamic>);
   }
 
-  Future<StreamInfo> streamInfo(int trackId) async =>
-      StreamInfo.fromJson(await _send('GET', '/tracks/$trackId/stream-url') as Map<String, dynamic>);
+  /// Returns a playable URL for [trackId].
+  ///
+  /// The server builds absolute URLs from its configured public address (APP_PUBLIC_BASE_URL), which may
+  /// not be the address this device uses (another IP, `adb reverse`, a changed DHCP lease, …). Since the
+  /// API is evidently reachable at [baseUrl], the stream is fetched from there too; only the token is
+  /// taken from the server's answer.
+  Future<StreamInfo> streamInfo(int trackId) async {
+    final info = StreamInfo.fromJson(await _send('GET', '/tracks/$trackId/stream-url') as Map<String, dynamic>);
+    final token = Uri.parse(info.url).queryParameters['token'];
+    if (token == null) return info;
+    final url = _base.replace(
+      path: '${_base.path}/api/v1/tracks/$trackId/stream',
+      queryParameters: {'token': token},
+    );
+    return StreamInfo(url: url.toString(), mimeType: info.mimeType);
+  }
 
   // ---------------- playlists ----------------
   Future<List<PlaylistSummary>> playlists() async {

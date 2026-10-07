@@ -38,6 +38,24 @@ void main() {
     expect(() => api.setBaseUrl('not a url ://'), throwsArgumentError);
   });
 
+  test('stream URLs use the address the app talks to, not the server-advertised host', () async {
+    final api = ApiClient(
+      baseUrl: 'http://127.0.0.1:8000',
+      tokenStore: MemoryTokenStore(),
+      httpClient: MockClient((req) async => http.Response.bytes(
+            utf8.encode(jsonEncode({
+              'url': 'http://192.168.1.8:8000/api/v1/tracks/7/stream?token=abc.def-ghi',
+              'expires_in': 21600,
+              'mime_type': 'audio/wav',
+            })),
+            200,
+          )),
+    );
+    final info = await api.streamInfo(7);
+    expect(info.url, 'http://127.0.0.1:8000/api/v1/tracks/7/stream?token=abc.def-ghi');
+    expect(info.mimeType, 'audio/wav');
+  });
+
   testWidgets('login screen lets the user change and persist the server address', (tester) async {
     final store = MemoryTokenStore();
     final auth = AuthState(ApiClient(baseUrl: 'http://10.0.2.2:8000', tokenStore: store))
