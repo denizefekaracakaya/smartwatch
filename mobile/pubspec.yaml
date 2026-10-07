@@ -1,0 +1,29 @@
+name: efetufe
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_secure_storage: ^10.3.4
+  http: ^1.6.0
+  just_audio: ^0.10.6
+  just_audio_background: ^0.0.1-beta.17
+  provider: ^6.1.5+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+dependency_overrides:
+  # audio_session 0.2.x requires Kotlin Gradle Plugin 2.x (uses `compilerOptions`); this project is on
+  # KGP 1.8.22 from the Flutter 3.29 template. Drop this pin when upgrading KGP.
+  audio_session: ">=0.1.24 <0.2.0"

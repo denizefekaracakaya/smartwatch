@@ -1,0 +1,48 @@
+# Local full stack: API + PostgreSQL + Mailpit (web UI for verification/reset e-mails at http://localhost:8025).
+#   APP_SECRET_KEY=$(python -c "import secrets;print(secrets.token_urlsafe(48))") docker compose up --build
+#   docker compose exec api python -m app.cli seed-demo
+services:
+  api:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENVIRONMENT: development
+      APP_SECRET_KEY: ${APP_SECRET_KEY:?set APP_SECRET_KEY}
+      APP_DATABASE_URL: postgresql+psycopg://efetufe:${POSTGRES_PASSWORD:-efetufe-dev}@db:5432/efetufe
+      APP_PUBLIC_BASE_URL: ${APP_PUBLIC_BASE_URL:-http://10.0.2.2:8000}
+      APP_EMAIL_BACKEND: smtp
+      APP_SMTP_HOST: mailpit
+      APP_SMTP_PORT: "1025"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - media:/data/media
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: efetufe
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-efetufe-dev}
+      POSTGRES_DB: efetufe
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U efetufe -d efetufe"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  media:
