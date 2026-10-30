@@ -133,6 +133,20 @@ Phase 10 — Security review & final audit   ✅ Complete (see audit below)
   with corrected Turkish artist/title names supplied as sidecars. MP3 streaming (`audio/mpeg`, HTTP 206)
   and search were verified on the Docker stack.
 
+### UI rework (0.2.0)
+- New visual system:
+  - near-black surfaces, warm off-white text and a single amber accent;
+  - generated cover art in muted earth tones, coloured per album (or artist) with the artist's
+    initials;
+  - large covers print the album or title like a record sleeve.
+- Home shows an artists row, then all songs alphabetically (shuffle action), then podcasts when there
+  are any. New artist screen with Play and Shuffle; artists are reachable from rows, search and the player.
+- Search is a single typo-tolerant field and lists the artists while empty. The AI-assistant mode was
+  removed from the app (the API endpoint remains).
+- The player and the playlist screen were restyled. The mini player shows the cover.
+- Backend: `GET /tracks/artists`, plus `artist` and `sort=title` filters on `GET /tracks` (tested).
+- Verified on the emulator with the release build against the Docker server.
+
 ## Phase 8 — Integration
 - `backend/scripts/smoke_test.py` starts uvicorn and runs the full journey over real HTTP. It passes.
 - Manual end-to-end run of the debug APK on an Android 16 (API 36) emulator against a local backend

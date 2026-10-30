@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../widgets/mini_player.dart';
-import 'discover_screen.dart';
+import 'home_screen.dart';
 import 'library_screen.dart';
 import 'profile_screen.dart';
 import 'search_screen.dart';
@@ -16,7 +16,7 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
-  static const _pages = [DiscoverScreen(), SearchScreen(), LibraryScreen(), ProfileScreen()];
+  static const _pages = [HomeScreen(), SearchScreen(), LibraryScreen(), ProfileScreen()];
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +33,8 @@ class _HomeShellState extends State<HomeShell> {
             setState(() => _index = i);
           },
           destinations: const [
-            NavigationDestination(icon: Icon(Icons.explore_outlined), selectedIcon: Icon(Icons.explore), label: 'Keşfet'),
-            NavigationDestination(icon: Icon(Icons.search), label: 'Ara'),
+            NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Ana sayfa'),
+            NavigationDestination(icon: Icon(Icons.search), selectedIcon: Icon(Icons.search_rounded), label: 'Ara'),
             NavigationDestination(
                 icon: Icon(Icons.library_music_outlined), selectedIcon: Icon(Icons.library_music), label: 'Kitaplık'),
             NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profil'),

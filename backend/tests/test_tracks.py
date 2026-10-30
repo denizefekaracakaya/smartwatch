@@ -176,3 +176,30 @@ def test_remove_demo_keeps_real_tracks_and_files(app, client, catalog, settings,
         db.expire_all()
         assert [i.track_id for i in db.get(Playlist, pl.id).items] == [real.id]
         assert remove_demo(db, storage) == 0
+
+
+def test_artists_and_artist_filter(client, users, catalog):
+    h = users.create()["headers"]
+    artists = client.get(f"{API}/artists", headers=h).json()
+    assert artists[0]["track_count"] == 2  # several demo artists have two tracks
+    by_name = {a["name"]: a["track_count"] for a in artists}
+    assert by_name["Lale Ses"] == 2 and by_name["Kilobyte"] == 1
+    assert sum(by_name.values()) == len(DEMO_CATALOG)
+    assert [a["track_count"] for a in artists] == sorted((a["track_count"] for a in artists), reverse=True)
+
+    podcasts = client.get(f"{API}/artists", headers=h, params={"kind": "podcast"}).json()
+    assert len(podcasts) == 4
+
+    page = client.get(API, headers=h, params={"artist": "Lale Ses"}).json()
+    assert page["total"] == 2
+    assert [t["title"] for t in page["items"]] == ["Annemin Bahçesi", "Kahve ve Yağmur"]  # sorted by title
+    assert client.get(API, headers=h, params={"artist": "Yok Böyle Biri"}).json()["total"] == 0
+    assert client.get(f"{API}/artists").status_code == 401
+
+
+def test_sort_by_title(client, users, catalog):
+    h = users.create()["headers"]
+    items = client.get(API, headers=h, params={"kind": "song", "sort": "title", "limit": 100}).json()["items"]
+    titles = [t["title"] for t in items]
+    assert titles == sorted(titles, key=str.lower)
+    assert client.get(API, headers=h, params={"sort": "bogus"}).status_code == 422

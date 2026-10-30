@@ -7,6 +7,7 @@ import '../../state/library_state.dart';
 import '../theme.dart';
 import '../widgets/add_to_playlist_sheet.dart';
 import '../widgets/common.dart';
+import '../widgets/cover_art.dart';
 import 'playlist_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
@@ -44,7 +45,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ? const Center(child: CircularProgressIndicator())
           : const EmptyState(
               icon: Icons.queue_music,
-              message: 'Henüz çalma listen yok.\nSağ alttaki + ile ilkini oluştur.',
+              message: 'Henüz çalma listen yok.\nSağ üstteki + ile ilkini oluştur.',
             );
     } else {
       body = RefreshIndicator(
@@ -54,12 +55,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
           itemBuilder: (context, i) {
             final p = library.playlists[i];
             return ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.queue_music)),
-              title: Text(p.name),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              leading: CoverArt(seed: p.name, label: p.name, size: 52),
+              title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(
-                [if (p.description != null) p.description!, '${p.trackCount} parça'].join(' • '),
+                [if (p.description != null) p.description!, '${p.trackCount} şarkı'].join(' · '),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: AppColors.textMuted),
               ),
               onTap: () => Navigator.of(context)
                   .push(MaterialPageRoute<void>(builder: (_) => PlaylistScreen(playlistId: p.id)))
@@ -70,13 +73,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
       );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Kitaplık')),
-      body: body,
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Yeni çalma listesi',
-        onPressed: _create,
-        child: const Icon(Icons.add),
+      appBar: AppBar(
+        title: const Text('Kitaplık'),
+        actions: [
+          IconButton(tooltip: 'Yeni çalma listesi', icon: const Icon(Icons.add), onPressed: _create),
+        ],
       ),
+      body: body,
     );
   }
 }

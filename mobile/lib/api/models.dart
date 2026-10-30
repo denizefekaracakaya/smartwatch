@@ -75,6 +75,16 @@ class Track {
   Duration get duration => Duration(seconds: durationSeconds);
 }
 
+class Artist {
+  Artist({required this.name, required this.trackCount});
+
+  factory Artist.fromJson(Map<String, dynamic> json) =>
+      Artist(name: json['name'] as String, trackCount: json['track_count'] as int);
+
+  final String name;
+  final int trackCount;
+}
+
 class TrackPage {
   TrackPage({required this.items, required this.total});
 

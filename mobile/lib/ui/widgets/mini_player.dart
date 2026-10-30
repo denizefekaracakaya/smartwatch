@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../state/playback_controller.dart';
 import '../screens/player_screen.dart';
 import '../theme.dart';
+import 'cover_art.dart';
 
 /// Compact player shown above the bottom navigation while something is queued.
 class MiniPlayer extends StatelessWidget {
@@ -21,39 +22,62 @@ class MiniPlayer extends StatelessWidget {
     }
     final track = player.current;
     if (track == null && !player.loading) return const SizedBox.shrink();
-    final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: scheme.surfaceContainerHigh,
+      color: AppColors.surfaceHigh,
       child: InkWell(
         onTap: track == null
             ? null
-            : () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const PlayerScreen())),
+            : () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  fullscreenDialog: true,
+                  builder: (_) => const PlayerScreen(),
+                )),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 4, 6),
+            child: Row(children: [
+              if (track != null) CoverArt.track(track, size: 40) else const SizedBox(width: 40, height: 40),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(
+                    track?.title ?? 'Yükleniyor…',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  Text(
+                    track?.artist ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
+                ]),
+              ),
+              IconButton(
+                tooltip: player.playing ? 'Duraklat' : 'Çal',
+                icon: Icon(player.playing ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 30),
+                onPressed: track == null ? null : player.togglePlay,
+              ),
+              IconButton(
+                tooltip: 'Sonraki',
+                icon: const Icon(Icons.skip_next_rounded),
+                onPressed: player.player.hasNext ? player.next : null,
+              ),
+            ]),
+          ),
           StreamBuilder<Duration>(
             stream: player.player.positionStream,
             builder: (context, snap) {
               final total = player.player.duration ?? track?.duration ?? Duration.zero;
               final pos = snap.data ?? Duration.zero;
               final value = total.inMilliseconds == 0 ? 0.0 : pos.inMilliseconds / total.inMilliseconds;
-              return LinearProgressIndicator(value: player.loading ? null : value.clamp(0.0, 1.0), minHeight: 2);
+              return LinearProgressIndicator(
+                value: player.loading ? null : value.clamp(0.0, 1.0),
+                minHeight: 2,
+                color: AppColors.text,
+                backgroundColor: AppColors.outline,
+              );
             },
-          ),
-          ListTile(
-            leading: const Icon(Icons.music_note),
-            title: Text(track?.title ?? 'Yükleniyor…', maxLines: 1, overflow: TextOverflow.ellipsis),
-            subtitle: Text(track?.artist ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
-            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-              IconButton(
-                tooltip: player.playing ? 'Duraklat' : 'Çal',
-                icon: Icon(player.playing ? Icons.pause : Icons.play_arrow),
-                onPressed: track == null ? null : player.togglePlay,
-              ),
-              IconButton(
-                tooltip: 'Sonraki',
-                icon: const Icon(Icons.skip_next),
-                onPressed: player.player.hasNext ? player.next : null,
-              ),
-            ]),
           ),
         ]),
       ),

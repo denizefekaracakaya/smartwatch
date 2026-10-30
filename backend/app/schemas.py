@@ -112,6 +112,11 @@ class TrackPage(BaseModel):
     offset: int
 
 
+class ArtistOut(BaseModel):
+    name: str
+    track_count: int
+
+
 class StreamUrlOut(BaseModel):
     url: str
     expires_in: int

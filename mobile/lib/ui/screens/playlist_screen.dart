@@ -5,10 +5,10 @@ import '../../api/api_client.dart';
 import '../../api/messages.dart';
 import '../../api/models.dart';
 import '../../state/auth_state.dart';
-import '../../state/playback_controller.dart';
 import '../theme.dart';
 import '../widgets/add_to_playlist_sheet.dart';
 import '../widgets/common.dart';
+import '../widgets/cover_art.dart';
 import '../widgets/mini_player.dart';
 import '../widgets/track_tile.dart';
 
@@ -107,10 +107,37 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
       );
     }
     final duration = p.tracks.fold(Duration.zero, (sum, t) => sum + t.duration);
+    final header = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          p.tracks.isEmpty
+              ? CoverArt(seed: p.name, label: p.name, size: 112)
+              : CoverArt.track(p.tracks.first, size: 112),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('ÇALMA LİSTESİ',
+                  style: TextStyle(fontSize: 11, letterSpacing: 1.2, color: AppColors.textMuted)),
+              const SizedBox(height: 4),
+              Text(p.name, maxLines: 2, overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 4),
+              Text(summarize(p.tracks.length, duration), style: const TextStyle(color: AppColors.textMuted)),
+            ]),
+          ),
+        ]),
+        if (p.description != null) ...[
+          const SizedBox(height: 10),
+          Text(p.description!, style: const TextStyle(color: AppColors.textMuted)),
+        ],
+        const SizedBox(height: 14),
+        PlayButtons(tracks: p.tracks),
+      ]),
+    );
     return Scaffold(
       bottomNavigationBar: const SafeArea(child: MiniPlayer()),
       appBar: AppBar(
-        title: Text(p.name),
         actions: [
           if (p.tracks.length > 1)
             IconButton(
@@ -127,45 +154,38 @@ class _PlaylistScreenState extends State<PlaylistScreen> {
           ),
         ],
       ),
-      body: p.tracks.isEmpty
-          ? const EmptyState(
-              icon: Icons.playlist_add,
-              message: 'Bu liste boş.\nKeşfet veya Ara sekmesinden parça ekleyebilirsin.',
+      body: _editing
+          ? ReorderableListView.builder(
+              header: header,
+              itemCount: p.tracks.length,
+              onReorder: _reorder,
+              itemBuilder: (_, i) => ListTile(
+                key: ValueKey(p.tracks[i].id),
+                leading: CoverArt.track(p.tracks[i], size: 40),
+                title: Text(p.tracks[i].title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Text(p.tracks[i].artist, style: const TextStyle(color: AppColors.textMuted)),
+                trailing: const Icon(Icons.drag_handle),
+              ),
             )
-          : Column(children: [
-              ListTile(
-                title: Text('${p.tracks.length} parça • ${formatDuration(duration)}'),
-                subtitle: p.description == null ? null : Text(p.description!),
-                trailing: FilledButton.icon(
-                  onPressed: () => context.read<PlaybackController>().playList(p.tracks, 0),
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Çal'),
+          : ListView(children: [
+              header,
+              if (p.tracks.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'Liste boş. Bir şarkının ⋮ menüsünden "Çalma listesine ekle"yi seç.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textMuted),
+                  ),
                 ),
-              ),
-              Expanded(
-                child: _editing
-                    ? ReorderableListView.builder(
-                        itemCount: p.tracks.length,
-                        onReorder: _reorder,
-                        itemBuilder: (_, i) => ListTile(
-                          key: ValueKey(p.tracks[i].id),
-                          leading: const Icon(Icons.drag_handle),
-                          title: Text(p.tracks[i].title),
-                          subtitle: Text(p.tracks[i].artist),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: p.tracks.length,
-                        itemBuilder: (_, i) => TrackTile(
-                          tracks: p.tracks,
-                          index: i,
-                          extraActions: [
-                            TrackAction('Listeden çıkar',
-                                () => _guard(() => _api.removeFromPlaylist(p.id, p.tracks[i].id))),
-                          ],
-                        ),
-                      ),
-              ),
+              for (var i = 0; i < p.tracks.length; i++)
+                TrackTile(
+                  tracks: p.tracks,
+                  index: i,
+                  extraActions: [
+                    TrackAction('Listeden çıkar', () => _guard(() => _api.removeFromPlaylist(p.id, p.tracks[i].id))),
+                  ],
+                ),
             ]),
     );
   }

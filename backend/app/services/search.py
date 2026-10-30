@@ -81,11 +81,15 @@ def list_tracks(
     genre: str | None,
     limit: int,
     offset: int,
+    artist: str | None = None,
+    sort: str = "recent",
 ) -> tuple[list[Track], int]:
     if query:
         results = [s.track for s in fuzzy_search(db, query, kind, limit=500)]
         if genre:
             results = [t for t in results if (t.genre or "").lower() == genre.lower()]
+        if artist:
+            results = [t for t in results if t.artist == artist]
         return results[offset : offset + limit], len(results)
 
     stmt = select(Track)
@@ -93,6 +97,21 @@ def list_tracks(
         stmt = stmt.where(Track.kind == kind)
     if genre:
         stmt = stmt.where(func.lower(Track.genre) == genre.lower())
+    if artist:
+        stmt = stmt.where(Track.artist == artist)
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
-    rows = db.scalars(stmt.order_by(Track.created_at.desc(), Track.id.desc()).limit(limit).offset(offset))
+    if artist or sort == "title":
+        order = (func.lower(Track.title), Track.id)
+    else:
+        order = (Track.created_at.desc(), Track.id.desc())
+    rows = db.scalars(stmt.order_by(*order).limit(limit).offset(offset))
     return list(rows), total
+
+
+def list_artists(db: Session, kind: TrackKind | None) -> list[tuple[str, int]]:
+    """Artists with their track counts, most tracks first."""
+    count = func.count(Track.id)
+    stmt = select(Track.artist, count).group_by(Track.artist).order_by(count.desc(), Track.artist)
+    if kind is not None:
+        stmt = stmt.where(Track.kind == kind)
+    return [(name, n) for name, n in db.execute(stmt)]

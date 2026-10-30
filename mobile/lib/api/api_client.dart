@@ -168,14 +168,28 @@ class ApiClient {
   }
 
   // ---------------- catalog ----------------
-  Future<TrackPage> tracks({String? query, TrackKind? kind, int limit = 50, int offset = 0}) async {
+  Future<TrackPage> tracks({
+    String? query,
+    TrackKind? kind,
+    String? artist,
+    bool alphabetical = false,
+    int limit = 50,
+    int offset = 0,
+  }) async {
     final json = await _send('GET', '/tracks', query: {
       if (query != null && query.isNotEmpty) 'q': query,
       if (kind != null) 'kind': kind.name,
+      if (artist != null) 'artist': artist,
+      if (alphabetical) 'sort': 'title',
       'limit': '$limit',
       'offset': '$offset',
     });
     return TrackPage.fromJson(json as Map<String, dynamic>);
+  }
+
+  Future<List<Artist>> artists({TrackKind? kind}) async {
+    final json = await _send('GET', '/tracks/artists', query: {if (kind != null) 'kind': kind.name}) as List;
+    return json.map((e) => Artist.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// Returns a playable URL for [trackId].

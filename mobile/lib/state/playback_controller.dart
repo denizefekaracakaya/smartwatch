@@ -85,6 +85,12 @@ class PlaybackController extends ChangeNotifier {
     }
   }
 
+  /// Plays [tracks] in a random order.
+  Future<void> playShuffled(List<Track> tracks) {
+    final shuffled = [...tracks]..shuffle();
+    return playList(shuffled, 0);
+  }
+
   Future<void> togglePlay() async {
     if (player.processingState == ProcessingState.completed) {
       // Replay the queue from the start instead of doing nothing at the end.

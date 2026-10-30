@@ -109,12 +109,16 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Form(
         key: _form,
         child: FormPage(children: [
-          Icon(Icons.graphic_eq, size: 64, color: theme.colorScheme.primary),
-          const SizedBox(height: 12),
-          Text('Efetüfe', textAlign: TextAlign.center, style: theme.textTheme.headlineMedium),
-          const SizedBox(height: 4),
-          Text('Müziğin bulutta, cebin rahat.', textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
-          const SizedBox(height: 32),
+          Text(
+            'Efetüfe',
+            style: theme.textTheme.headlineMedium?.copyWith(fontSize: 40, letterSpacing: -1.5),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Kendi müzik sunucun. Hesabınla giriş yap.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 36),
           TextFormField(
             key: const Key('login-email'),
             controller: _email,
@@ -162,6 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 24),
           TextButton.icon(
             key: const Key('server-button'),
+            style: TextButton.styleFrom(foregroundColor: theme.colorScheme.onSurfaceVariant),
             onPressed: _editServer,
             icon: const Icon(Icons.dns_outlined, size: 18),
             label: Text('Sunucu: ${context.watch<AuthState>().serverUrl}', overflow: TextOverflow.ellipsis),

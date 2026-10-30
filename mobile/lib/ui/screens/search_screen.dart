@@ -6,12 +6,13 @@ import 'package:provider/provider.dart';
 import '../../api/messages.dart';
 import '../../api/models.dart';
 import '../../state/auth_state.dart';
+import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/cover_art.dart';
 import '../widgets/track_tile.dart';
+import 'artist_screen.dart';
 
-enum _Mode { quick, assistant }
-
-/// Quick (fuzzy, as-you-type) search, plus the AI assistant for half-remembered songs and podcasts.
+/// As-you-type search (typo tolerant on the server). With an empty field it lists all artists.
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -22,12 +23,17 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final _controller = TextEditingController();
   Timer? _debounce;
-  _Mode _mode = _Mode.quick;
   bool _loading = false;
   Object? _error;
   List<Track> _results = const [];
-  AssistantResult? _assistant;
+  List<Artist>? _artists;
   int _requestId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadArtists();
+  }
 
   @override
   void dispose() {
@@ -36,21 +42,19 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  void _onChanged(String value) {
-    if (_mode == _Mode.assistant) {
-      // The assistant field is multi-line for readability, but Enter (e.g. a hardware keyboard) means "ask".
-      if (value.contains('\n')) {
-        final cleaned = value.replaceAll('\n', ' ').trim();
-        _controller.value = TextEditingValue(
-          text: cleaned,
-          selection: TextSelection.collapsed(offset: cleaned.length),
-        );
-        _run();
-      }
-      return;
+  Future<void> _loadArtists() async {
+    try {
+      final artists = await context.read<AuthState>().api.artists();
+      if (mounted) setState(() => _artists = artists);
+    } catch (_) {
+      if (mounted) setState(() => _artists = const []);
     }
+  }
+
+  void _onChanged(String _) {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 350), _run);
+    _debounce = Timer(const Duration(milliseconds: 300), _run);
+    setState(() {}); // update the clear button
   }
 
   Future<void> _run() async {
@@ -59,8 +63,8 @@ class _SearchScreenState extends State<SearchScreen> {
     if (query.length < 2) {
       setState(() {
         _results = const [];
-        _assistant = null;
         _error = null;
+        _loading = false;
       });
       return;
     }
@@ -68,15 +72,9 @@ class _SearchScreenState extends State<SearchScreen> {
       _loading = true;
       _error = null;
     });
-    final api = context.read<AuthState>().api;
     try {
-      if (_mode == _Mode.quick) {
-        final page = await api.tracks(query: query, limit: 50);
-        if (id == _requestId && mounted) setState(() => _results = page.items);
-      } else {
-        final result = await api.assistantSearch(query);
-        if (id == _requestId && mounted) setState(() => _assistant = result);
-      }
+      final page = await context.read<AuthState>().api.tracks(query: query, limit: 50);
+      if (id == _requestId && mounted) setState(() => _results = page.items);
     } catch (e) {
       if (id == _requestId && mounted) setState(() => _error = e);
     } finally {
@@ -91,45 +89,31 @@ class _SearchScreenState extends State<SearchScreen> {
       body: Column(children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: SegmentedButton<_Mode>(
-            segments: const [
-              ButtonSegment(value: _Mode.quick, icon: Icon(Icons.search), label: Text('Hızlı arama')),
-              ButtonSegment(value: _Mode.assistant, icon: Icon(Icons.auto_awesome), label: Text('AI asistan')),
-            ],
-            selected: {_mode},
-            onSelectionChanged: (s) {
-              setState(() {
-                _mode = s.first;
-                _error = null;
-              });
-              if (_mode == _Mode.quick) _run();
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: TextField(
             key: const Key('search-field'),
             controller: _controller,
             onChanged: _onChanged,
             onSubmitted: (_) => _run(),
             textInputAction: TextInputAction.search,
-            maxLength: _mode == _Mode.assistant ? 500 : 200,
-            minLines: 1,
-            maxLines: _mode == _Mode.assistant ? 3 : 1,
+            maxLength: 200,
             decoration: InputDecoration(
-              hintText: _mode == _Mode.quick
-                  ? 'Şarkı, sanatçı, albüm veya podcast'
-                  : 'Örn: "nakaratında gel yanıma diyen bir yaz şarkısı"',
-              prefixIcon: Icon(_mode == _Mode.quick ? Icons.search : Icons.auto_awesome),
-              suffixIcon: _mode == _Mode.assistant
-                  ? IconButton(tooltip: 'Sor', icon: const Icon(Icons.send), onPressed: _loading ? null : _run)
-                  : null,
+              hintText: 'Şarkı, sanatçı veya albüm',
+              prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
+              suffixIcon: _controller.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Temizle',
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: () {
+                        _controller.clear();
+                        _onChanged('');
+                      },
+                    ),
               counterText: '',
             ),
           ),
         ),
-        if (_loading) const LinearProgressIndicator(),
+        SizedBox(height: 2, child: _loading ? const LinearProgressIndicator() : null),
         Expanded(child: _body()),
       ]),
     );
@@ -137,41 +121,32 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _body() {
     if (_error != null) return ErrorRetry(message: errorMessage(_error!), onRetry: _run);
-    if (_mode == _Mode.quick) {
-      if (_results.isEmpty) {
-        return EmptyState(
-          icon: Icons.search,
-          message: _controller.text.trim().length < 2 ? 'Aramak için yazmaya başla.' : 'Sonuç bulunamadı.',
-        );
-      }
-      return ListView.builder(
-        itemCount: _results.length,
-        itemBuilder: (_, i) => TrackTile(tracks: _results, index: i),
-      );
+    if (_controller.text.trim().length < 2) return _artistList();
+    if (_results.isEmpty && !_loading) {
+      return const EmptyState(icon: Icons.search_off, message: 'Bu aramayla eşleşen bir şey yok.');
     }
-    final result = _assistant;
-    if (result == null) {
-      return const EmptyState(
-        icon: Icons.auto_awesome,
-        message: 'Adını hatırlamadığın şarkıyı ya da podcasti anlat; asistan senin için bulsun.',
-      );
+    return ListView.builder(
+      itemCount: _results.length,
+      itemBuilder: (_, i) => TrackTile(tracks: _results, index: i),
+    );
+  }
+
+  Widget _artistList() {
+    final artists = _artists;
+    if (artists == null) return const SizedBox.shrink();
+    if (artists.isEmpty) {
+      return const EmptyState(icon: Icons.search, message: 'Aramak için yazmaya başla.');
     }
-    final tracks = result.matches.map((m) => m.track).toList();
     return ListView(children: [
-      Card(
-        margin: const EdgeInsets.all(16),
-        child: ListTile(
-          leading: Icon(result.aiUsed ? Icons.auto_awesome : Icons.info_outline),
-          title: Text(result.message.isEmpty ? 'Sonuçlar' : result.message),
-        ),
-      ),
-      for (var i = 0; i < tracks.length; i++)
-        TrackTile(
-          tracks: tracks,
-          index: i,
-          subtitle: result.matches[i].reason == null
-              ? null
-              : '${tracks[i].artist} — ${result.matches[i].reason}',
+      const SectionHeader('Sanatçılar'),
+      for (final artist in artists)
+        ListTile(
+          leading: CoverArt(seed: artist.name, label: artist.name, size: 44, circle: true),
+          title: Text(artist.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+          subtitle: Text('${artist.trackCount} şarkı', style: const TextStyle(color: AppColors.textMuted)),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => ArtistScreen(artist: artist.name)),
+          ),
         ),
     ]);
   }
