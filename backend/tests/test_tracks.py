@@ -147,3 +147,32 @@ def test_ingest_directory_reads_metadata_and_sidecar(app, settings, tmp_path):
     assert tracks["My Song"].kind == TrackKind.SONG and tracks["My Song"].duration_seconds == 1
     assert tracks["Episode One"].kind == TrackKind.PODCAST
     assert Path(settings.media_dir / tracks["Episode One"].file_path).is_file()
+
+
+def test_remove_demo_keeps_real_tracks_and_files(app, client, catalog, settings, tmp_path, users):
+    from app.models import Playlist, PlaylistItem
+    from app.services.catalog import TrackMetadata, add_track, remove_demo
+
+    storage = LocalMediaStorage(settings.media_dir)
+    with app.state.db.session_factory() as db:
+        real_src = tmp_path / "real.wav"
+        synth_wav(real_src, seed=999, seconds=1)
+        real = add_track(db, storage, real_src, TrackMetadata(title="Gerçek", artist="Sanatçı"))
+        demo = db.scalars(select(Track).where(Track.title == "Yaz Rüzgarı")).one()
+        demo_file = storage.resolve(demo.file_path)
+        owner = users.create()
+        user_id = client.get("/api/v1/auth/me", headers=owner["headers"]).json()["id"]
+        pl = Playlist(owner_id=user_id, name="Mix")
+        pl.items.append(PlaylistItem(track_id=demo.id, position=0))
+        pl.items.append(PlaylistItem(track_id=real.id, position=1))
+        db.add(pl)
+        db.commit()
+
+        assert remove_demo(db, storage) == len(DEMO_CATALOG)
+        assert not demo_file.exists()
+        titles = [t.title for t in db.scalars(select(Track))]
+        assert titles == ["Gerçek"]
+        assert storage.resolve(real.file_path).exists()
+        db.expire_all()
+        assert [i.track_id for i in db.get(Playlist, pl.id).items] == [real.id]
+        assert remove_demo(db, storage) == 0

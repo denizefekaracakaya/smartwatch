@@ -34,6 +34,10 @@ class LocalMediaStorage:
             raise UnsafePathError(relative_path)
         return candidate
 
+    def delete(self, relative_path: str) -> None:
+        """Remove a stored file (missing files are ignored)."""
+        self.resolve(relative_path).unlink(missing_ok=True)
+
     def store(self, source: Path) -> tuple[str, int]:
         """Copy ``source`` into content-addressed storage. Returns (relative path, size in bytes)."""
         sha = hashlib.sha256()

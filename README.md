@@ -24,6 +24,7 @@ cd backend
 cp .env.example .env            # then set APP_SECRET_KEY (python -c "import secrets;print(secrets.token_urlsafe(48))")
 uv sync
 uv run python -m app.cli seed-demo          # 16 fictional demo tracks with synthetic audio
+uv run python -m app.cli remove-demo        # later: drop them again (real tracks are kept)
 uv run uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000
 ```
 

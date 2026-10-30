@@ -3,6 +3,7 @@
 Usage:
     python -m app.cli init-db
     python -m app.cli seed-demo [--seconds 30]
+    python -m app.cli remove-demo
     python -m app.cli ingest <directory> [--kind song|podcast]
     python -m app.cli import-playlists <file.json|file.csv|spotify-playlist-url> --user <email>
                                        [--dry-run] [--missing-out missing.csv]
@@ -19,7 +20,7 @@ from sqlalchemy import select
 from app.config import get_settings
 from app.db import Database
 from app.models import TrackKind, User
-from app.services.catalog import ingest_directory, seed_demo
+from app.services.catalog import ingest_directory, remove_demo, seed_demo
 from app.services.playlist_import import (
     fetch_spotify_playlist,
     import_playlists,
@@ -76,6 +77,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("init-db", help="create database tables")
     seed = sub.add_parser("seed-demo", help="add the synthetic demo catalog")
     seed.add_argument("--seconds", type=int, default=30)
+    sub.add_parser("remove-demo", help="delete the synthetic demo tracks added by seed-demo")
     ingest = sub.add_parser("ingest", help="import audio files from a directory (recursive)")
     ingest.add_argument("directory", type=Path)
     ingest.add_argument("--kind", choices=[k.value for k in TrackKind], default=TrackKind.SONG.value)
@@ -104,6 +106,8 @@ def main(argv: list[str] | None = None) -> int:
             print("Database ready.")
         elif args.command == "seed-demo":
             print(f"Added {seed_demo(db, storage, seconds=args.seconds)} demo tracks.")
+        elif args.command == "remove-demo":
+            print(f"Removed {remove_demo(db, storage)} demo tracks.")
         elif args.command == "ingest":
             if not args.directory.is_dir():
                 print(f"Not a directory: {args.directory}", file=sys.stderr)

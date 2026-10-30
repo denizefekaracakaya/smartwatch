@@ -17,9 +17,13 @@ telefondaki uygulamayı o sunucuya bağlaman gerekir. Telefon ile bilgisayar **a
 
    docker compose up -d --build
    docker compose exec api python -m app.cli seed-demo     # 16 demo parça ekler (bir kez yeterli)
+   # Gerçek şarkılarını ekledikten sonra demo parçaları silmek için:
+   # docker compose exec api python -m app.cli remove-demo
    ```
 
-   Sonraki seferlerde sadece `docker compose up -d` yeterli. Gizli anahtar değişirse tüm oturumlar
+   Sonraki seferlerde sadece `docker compose up -d` yeterli. Sunucunun bilgisayar açılınca kendiliğinden
+   başlaması için Docker Desktop → **Settings → General → Start Docker Desktop when you sign in** seçeneğini
+   aç; konteynerler Docker ile birlikte otomatik başlar (elle `docker compose stop` demediysen). Gizli anahtar değişirse tüm oturumlar
    kapanır; bu yüzden `.env` dosyasını sakla.
 
 4. Kontrol: tarayıcıda `http://192.168.1.8:8000/health` → `{"status":"ok"}` görmelisin.

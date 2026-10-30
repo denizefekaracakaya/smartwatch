@@ -319,3 +319,21 @@ def seed_demo(db: Session, storage: LocalMediaStorage, seconds: int = 30) -> int
             if add_track(db, storage, source, meta) is not None:
                 added += 1
     return added
+
+
+def remove_demo(db: Session, storage: LocalMediaStorage) -> int:
+    """Delete the synthetic demo tracks (and their audio files) added by :func:`seed_demo`.
+
+    Demo tracks are recognised by title + artist from ``DEMO_CATALOG`` *and* a WAV file, so a real
+    song that happens to share a name is never touched. Playlist entries are removed by the cascade.
+    """
+    wanted = {(e["title"], e["artist"]) for e in DEMO_CATALOG}
+    removed = 0
+    for track in db.scalars(select(Track).where(Track.mime_type == "audio/wav")).all():
+        if (track.title, track.artist) not in wanted:
+            continue
+        storage.delete(track.file_path)
+        db.delete(track)
+        removed += 1
+    db.commit()
+    return removed
